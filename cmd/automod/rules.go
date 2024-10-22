@@ -16,24 +16,33 @@ var BLADERUNNER_THRESHOLD = 2
 var JABRONI_THRESHOLD = 2
 
 func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
-	if post.Reply == nil || IsSelfThread(c, post) {
-		return nil
-	}
-
 	botType := GetBotResponseType(post.Text)
 
 	if botType == -1 {
 		return nil
 	}
 
+	authorDid := c.Account.Identity.DID.String()
+
+	if post.Reply == nil || IsSelfThread(c, post) {
+		mentionedDids := mentionedDids(post)
+		for _, botDid := range mentionedDids {
+			handleBotSignal(c, botDid, authorDid, botType)
+		}
+		return nil
+	}
 	parentURI, err := syntax.ParseATURI(post.Reply.Parent.Uri)
 	if err != nil {
 		return nil
 	}
 
 	botDid := parentURI.Authority().String()
-	authorDid := c.Account.Identity.DID.String()
+	handleBotSignal(c, botDid, authorDid, botType)
 
+	return nil
+}
+
+func handleBotSignal(c *automod.RecordContext, botDid string, authorDid string, botType int) {
 	if botType == 1 {
 		c.IncrementDistinct("goodbot", botDid, authorDid)
 		c.IncrementDistinct("bladerunner", authorDid, botDid)
@@ -51,7 +60,7 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 			// c.Notify("slack")
 		}
 
-		return nil
+		return
 	}
 
 	c.IncrementDistinct("badbot", botDid, authorDid)
@@ -70,24 +79,52 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		c.Logger.Error("jabroni")
 		// c.Notify("slack")
 	}
-
-	return nil
 }
 
-// @TODO: this isn't a clean check and doing some duplicate regex checks that can be avoided
+func mentionedDids(post *appbsky.FeedPost) []string {
+	mentionedDids := []string{}
+	for _, facet := range post.Facets {
+		for _, feature := range facet.Features {
+			mention := feature.RichtextFacet_Mention
+			if mention == nil {
+				continue
+			}
+			mentionedDids = append(mentionedDids, mention.Did)
+		}
+	}
+
+	return mentionedDids
+}
+
+// @TODO: this is a dumb check that only matches text exactly, could be improved
 func GetBotResponseType(s string) int {
 	// Normalize the string by converting to lowercase and trimming spaces
-	s = strings.TrimSpace(strings.ToLower(s))
+	tokens := TokenizeText(strings.TrimSpace(strings.ToLower(s)))
+	hasGoodBot := false
+	hasBadBot := false
 
-	if s == "good bot" {
+	for i, token := range tokens {
+		if token != "good" && token != "bad" && token != "bot" && !strings.HasPrefix(token, "@") {
+			return -1
+		}
+
+		if (token == "good" || token == "bad") && i+1 < len(tokens) && tokens[i+1] == "bot" {
+			if token == "good" {
+				hasGoodBot = true
+			} else {
+				hasBadBot = true
+			}
+		}
+	}
+
+	if hasGoodBot {
 		return 1
 	}
 
-	if s == "bad bot" {
+	if hasBadBot {
 		return 0
 	}
 
-	// If neither pattern matches
 	return -1
 }
 
@@ -110,4 +147,8 @@ func IsSelfThread(c *automod.RecordContext, post *appbsky.FeedPost) bool {
 		return true
 	}
 	return false
+}
+
+func TokenizeText(text string) []string {
+	return strings.Fields(text)
 }
