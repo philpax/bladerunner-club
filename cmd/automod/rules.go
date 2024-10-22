@@ -31,21 +31,29 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		return nil
 	}
 
-	botDid := parentURI.Authority().String()
-	authorDid := c.Account.Identity.DID.String()
+	botDID, err := parentURI.Authority().AsDID()
+	if err != nil {
+		return err
+	}
+	authorDID := c.Account.Identity.DID
 
 	if botType == 1 {
-		c.IncrementDistinct("goodbot", botDid, authorDid)
-		c.IncrementDistinct("bladerunner", authorDid, botDid)
+		c.IncrementDistinct("goodbot", botDID.String(), authorDID.String())
+		c.IncrementDistinct("bladerunner", authorDID.String(), botDID.String())
 		c.Logger.Error("good bot reply")
 
-		if c.GetCountDistinct("goodbot", botDid, countstore.PeriodTotal) > GOOD_BOT_REPLY_THRESHOLD-1 {
+		// XXX: bypass counts for early testing
+		if err = addAccountLabel(c, botDID, "good-bot"); err != nil {
+			return err
+		}
+
+		if c.GetCountDistinct("goodbot", botDID.String(), countstore.PeriodTotal) > GOOD_BOT_REPLY_THRESHOLD-1 {
 			c.Logger.Error("good bot")
 			// c.AddAccountLabel("good-bot")
 			// c.Notify("slack")
 		}
 
-		if c.GetCountDistinct("bladerunner", authorDid, countstore.PeriodTotal) > BLADERUNNER_THRESHOLD-1 {
+		if c.GetCountDistinct("bladerunner", authorDID.String(), countstore.PeriodTotal) > BLADERUNNER_THRESHOLD-1 {
 			c.Logger.Error("bladerunner")
 			// c.AddAccountLabel("bladerunner")
 			// c.Notify("slack")
@@ -54,18 +62,18 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		return nil
 	}
 
-	c.IncrementDistinct("badbot", botDid, authorDid)
-	c.IncrementDistinct("jabroni", authorDid, botDid)
+	c.IncrementDistinct("badbot", botDID.String(), authorDID.String())
+	c.IncrementDistinct("jabroni", authorDID.String(), botDID.String())
 	c.Logger.Error("bad bot reply")
 
-	if c.GetCountDistinct("badbot", botDid, countstore.PeriodTotal) > BAD_BOT_REPLY_THRESHOLD-1 {
+	if c.GetCountDistinct("badbot", botDID.String(), countstore.PeriodTotal) > BAD_BOT_REPLY_THRESHOLD-1 {
 		// @TODO: this would add label to the reply author's account not the parent/bot's account
 		// c.AddAccountLabel("bad-bot")
 		c.Logger.Error("bad bot")
 		// c.Notify("slack")
 	}
 
-	if c.GetCountDistinct("jabroni", authorDid, countstore.PeriodTotal) > JABRONI_THRESHOLD-1 {
+	if c.GetCountDistinct("jabroni", authorDID.String(), countstore.PeriodTotal) > JABRONI_THRESHOLD-1 {
 		// c.AddAccountLabel("jabroni")
 		c.Logger.Error("jabroni")
 		// c.Notify("slack")

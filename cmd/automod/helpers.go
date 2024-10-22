@@ -23,6 +23,7 @@ func addAccountLabel(c *automod.RecordContext, did syntax.DID, label string) err
 	}
 
 	// send label via engine
+	c.Logger.Warn("adding label", "did", did, "label", label)
 	comment := "auto-adding label"
 	_, err := toolsozone.ModerationEmitEvent(c.Ctx, eng.OzoneClient, &toolsozone.ModerationEmitEvent_Input{
 		CreatedBy: eng.OzoneClient.Auth.Did,
@@ -63,6 +64,7 @@ func removeAccountLabel(c *automod.RecordContext, did syntax.DID, label string) 
 	}
 
 	// send label via engine
+	c.Logger.Warn("removing label", "did", did, "label", label)
 	comment := "auto-removing label"
 	_, err := toolsozone.ModerationEmitEvent(c.Ctx, eng.OzoneClient, &toolsozone.ModerationEmitEvent_Input{
 		CreatedBy: eng.OzoneClient.Auth.Did,
