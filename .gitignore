@@ -1,0 +1,28 @@
+*.o
+*.a
+*.pyc
+#*#
+*~
+*.swp
+.*
+*.tmp
+*.old
+*.profile
+*.bkp
+*.bak
+[Tt]humbs.db
+*.DS_Store
+build/
+_build/
+src/build/
+*.log
+*.db
+/data/
+test-coverage.out
+
+# executables
+/automod
+
+# Don't ignore this file itself, or other specific dotfiles
+!.gitignore
+!.github/
