@@ -22,12 +22,12 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		return nil
 	}
 
-	authorDid := c.Account.Identity.DID.String()
+	authorDID := c.Account.Identity.DID
 
 	if post.Reply == nil || IsSelfThread(c, post) {
 		mentionedDids := mentionedDids(post)
-		for _, botDid := range mentionedDids {
-			handleBotSignal(c, botDid, authorDid, botType)
+		for _, botDID := range mentionedDids {
+			handleBotSignal(c, botDID, authorDID, botType)
 		}
 		return nil
 	}
@@ -36,25 +36,32 @@ func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		return nil
 	}
 
-	botDid := parentURI.Authority().String()
-	handleBotSignal(c, botDid, authorDid, botType)
-
+	botDID, err := parentURI.Authority().AsDID()
+	if err != nil {
+		return err
+	}
+	handleBotSignal(c, botDID, authorDID, botType)
 	return nil
 }
 
-func handleBotSignal(c *automod.RecordContext, botDid string, authorDid string, botType int) {
+func handleBotSignal(c *automod.RecordContext, botDID string, authorDID string, botType int) {
 	if botType == 1 {
-		c.IncrementDistinct("goodbot", botDid, authorDid)
-		c.IncrementDistinct("bladerunner", authorDid, botDid)
+		c.IncrementDistinct("goodbot", botDID, authorDID)
+		c.IncrementDistinct("bladerunner", authorDID, botDID)
 		c.Logger.Error("good bot reply")
 
-		if c.GetCountDistinct("goodbot", botDid, countstore.PeriodTotal) > GOOD_BOT_REPLY_THRESHOLD-1 {
+		// XXX: bypass counts for early testing
+		if err = addAccountLabel(c, botDID, "good-bot"); err != nil {
+			return err
+		}
+
+		if c.GetCountDistinct("goodbot", botDID, countstore.PeriodTotal) > GOOD_BOT_REPLY_THRESHOLD-1 {
 			c.Logger.Error("good bot")
 			// c.AddAccountLabel("good-bot")
 			// c.Notify("slack")
 		}
 
-		if c.GetCountDistinct("bladerunner", authorDid, countstore.PeriodTotal) > BLADERUNNER_THRESHOLD-1 {
+		if c.GetCountDistinct("bladerunner", authorDID, countstore.PeriodTotal) > BLADERUNNER_THRESHOLD-1 {
 			c.Logger.Error("bladerunner")
 			// c.AddAccountLabel("bladerunner")
 			// c.Notify("slack")
@@ -63,18 +70,18 @@ func handleBotSignal(c *automod.RecordContext, botDid string, authorDid string, 
 		return
 	}
 
-	c.IncrementDistinct("badbot", botDid, authorDid)
-	c.IncrementDistinct("jabroni", authorDid, botDid)
+	c.IncrementDistinct("badbot", botDID, authorDID)
+	c.IncrementDistinct("jabroni", authorDID, botDID)
 	c.Logger.Error("bad bot reply")
 
-	if c.GetCountDistinct("badbot", botDid, countstore.PeriodTotal) > BAD_BOT_REPLY_THRESHOLD-1 {
+	if c.GetCountDistinct("badbot", botDID, countstore.PeriodTotal) > BAD_BOT_REPLY_THRESHOLD-1 {
 		// @TODO: this would add label to the reply author's account not the parent/bot's account
 		// c.AddAccountLabel("bad-bot")
 		c.Logger.Error("bad bot")
 		// c.Notify("slack")
 	}
 
-	if c.GetCountDistinct("jabroni", authorDid, countstore.PeriodTotal) > JABRONI_THRESHOLD-1 {
+	if c.GetCountDistinct("jabroni", authorDID, countstore.PeriodTotal) > JABRONI_THRESHOLD-1 {
 		// c.AddAccountLabel("jabroni")
 		c.Logger.Error("jabroni")
 		// c.Notify("slack")
