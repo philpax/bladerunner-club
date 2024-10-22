@@ -3,11 +3,12 @@ module github.com/bluesky-social/bladerunner-club
 go 1.22.2
 
 require (
-	github.com/bluesky-social/indigo v0.0.0-20241022184456-f49cfdb05a3b
+	github.com/bluesky-social/indigo v0.0.0-20241022192011-1b2d84c83f3b
 	github.com/carlmjohnson/versioninfo v0.22.5
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/redis/go-redis/v9 v9.3.0
+	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.25.7
 	golang.org/x/time v0.3.0
 )
@@ -82,7 +83,6 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.0.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
