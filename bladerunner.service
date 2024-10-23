@@ -1,0 +1,15 @@
+[Unit]
+Description=Bladerunner Automod
+After=network.target
+
+[Service]
+ExecStart=/home/ubuntu/bladerunner-club/automod run
+WorkingDirectory=/data/bladerunner
+User=root
+Group=root
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/data/bladerunner/env
+
+[Install]
+WantedBy=multi-user.target
