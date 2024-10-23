@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetBotResponseType(t *testing.T) {
+func TestParsePostText(t *testing.T) {
 	assert := assert.New(t)
 
-	assert.Equal(GetBotResponseType("bad bot"), 0)
-	assert.Equal(GetBotResponseType("good bot"), 1)
-	assert.Equal(GetBotResponseType("good bot beahvior is punished"), -1)
-	assert.Equal(GetBotResponseType("testing good bot one"), -1)
-	assert.Equal(GetBotResponseType("testing good bot"), -1)
-	assert.Equal(GetBotResponseType("@test.bsky.social good bot"), 1)
-	assert.Equal(GetBotResponseType("bad bot @one.bsky.social"), 0)
+	assert.Equal(parsePostText("bad bot"), NilBot)
+	assert.Equal(parsePostText("good bot"), GoodBot)
+	assert.Equal(parsePostText("good bot beahvior is punished"), BadBot)
+	assert.Equal(parsePostText("testing good bot one"), BadBot)
+	assert.Equal(parsePostText("testing good bot"), BadBot)
+	assert.Equal(parsePostText("@test.bsky.social good bot"), GoodBot)
+	assert.Equal(parsePostText("bad bot @one.bsky.social"), NilBot)
 }

@@ -112,7 +112,7 @@ func NewServer(dir identity.Directory, config Config) (*Server, error) {
 
 	ruleset := automod.RuleSet{
 		PostRules: []automod.PostRuleFunc{
-			GoodbotBadbotRule,
+			GoodBotBadBotRule,
 		},
 	}
 

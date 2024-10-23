@@ -7,155 +7,144 @@ import (
 	"github.com/bluesky-social/indigo/atproto/syntax"
 	"github.com/bluesky-social/indigo/automod"
 	"github.com/bluesky-social/indigo/automod/countstore"
+	helpers "github.com/bluesky-social/indigo/automod/rules"
 )
 
-var _ automod.PostRuleFunc = GoodbotBadbotRule
-var GOOD_BOT_REPLY_THRESHOLD = 2
-var BAD_BOT_REPLY_THRESHOLD = 2
-var BLADERUNNER_THRESHOLD = 2
-var JABRONI_THRESHOLD = 2
+var (
+	GOOD_BOT_THRESHOLD = 2
+	BAD_BOT_THRESHOLD  = 2
+	//BLADERUNNER_THRESHOLD = 2
+	//JABRONI_THRESHOLD = 2
+)
 
-func GoodbotBadbotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
-	botType := GetBotResponseType(post.Text)
+const (
+	NilBot  = ""
+	GoodBot = "good-bot"
+	BadBot  = "bad-bot"
+)
 
-	if botType == -1 {
+var _ automod.PostRuleFunc = GoodBotBadBotRule
+
+// top-level rule for good-bot/bad-bot "voting" and auto-labeling system
+func GoodBotBadBotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
+
+	// is this post assessing a subject account as "good bot" or "bad bot"? if not, bail out early
+	vote, subjectDID := parseBotAssessment(c, post)
+	if vote == NilBot || subjectDID == nil {
 		return nil
 	}
 
+	eng := c.InternalEngine()
 	authorDID := c.Account.Identity.DID
-
-	if post.Reply == nil || IsSelfThread(c, post) {
-		mentionedDids := mentionedDids(post)
-		for _, botDID := range mentionedDids {
-			handleBotSignal(c, botDID, authorDID, botType)
-		}
-		return nil
-	}
-	parentURI, err := syntax.ParseATURI(post.Reply.Parent.Uri)
-	if err != nil {
-		return nil
-	}
-
-	botDID, err := parentURI.Authority().AsDID()
+	authorMeta, err := eng.GetAccountMeta(c.Ctx, c.Account.Identity)
 	if err != nil {
 		return err
 	}
-	handleBotSignal(c, botDID, authorDID, botType)
+
+	// if the account is a jabroni or bad bot, bail out
+	if accountHasLabel(authorMeta, "jabroni") || accountHasLabel(authorMeta, "bad-bot") {
+		c.Logger.Warn("skipping bot assessment from bad account", "authorLabels", authorMeta.AccountLabels)
+		return nil
+	}
+
+	// if we got this far, the assessment is legitimate
+	// TODO: c.TagRecord("bot-assessment")
+
+	subjectIdent, err := eng.Directory.LookupDID(c.Ctx, *subjectDID)
+	if err != nil {
+		return err
+	}
+	subjectMeta, err := eng.GetAccountMeta(c.Ctx, subjectIdent)
+	if err != nil {
+		return err
+	}
+	goodCount := c.GetCountDistinct("good-bot", subjectDID.String(), countstore.PeriodTotal)
+	badCount := c.GetCountDistinct("bad-bot", subjectDID.String(), countstore.PeriodTotal)
+
+	if vote == GoodBot {
+		c.IncrementDistinct("good-bot", subjectDID.String(), authorDID.String())
+		goodCount = goodCount + 1
+	} else if vote == BadBot {
+		c.IncrementDistinct("bad-bot", subjectDID.String(), authorDID.String())
+		badCount = goodCount + 1
+	}
+
+	c.Logger.Warn("valid bot assessment", "vote", vote, "goodCount", goodCount, "badCount", badCount, "subjectLabels", subjectMeta.AccountLabels)
+
+	// blade-runner authors auto-apply, regardless of counts
+	if accountHasLabel(authorMeta, "bladerunner") {
+		if err = addAccountLabel(c, *subjectDID, vote); err != nil {
+			return err
+		}
+		// c.Notify("slack")
+		return nil
+	}
+
+	if vote == GoodBot && goodCount >= GOOD_BOT_THRESHOLD {
+		if err = addAccountLabel(c, *subjectDID, vote); err != nil {
+			return err
+		}
+		// c.Notify("slack")
+		return nil
+	}
+
+	if vote == BadBot && badCount >= BAD_BOT_THRESHOLD {
+		if err = addAccountLabel(c, *subjectDID, vote); err != nil {
+			return err
+		}
+		// c.Notify("slack")
+		return nil
+	}
+
 	return nil
 }
 
-func handleBotSignal(c *automod.RecordContext, botDID string, authorDID string, botType int) {
-	if botType == 1 {
-		c.IncrementDistinct("goodbot", botDID, authorDID)
-		c.IncrementDistinct("bladerunner", authorDID, botDID)
-		c.Logger.Error("good bot reply")
+// parses the post, decideds if it is saying another account is a good/bad bot. returns the assessment type and the subject DID
+func parseBotAssessment(c *automod.RecordContext, post *appbsky.FeedPost) (string, *syntax.DID) {
 
-		// XXX: bypass counts for early testing
-		if err = addAccountLabel(c, botDID, "good-bot"); err != nil {
-			return err
+	vote := parsePostText(post.Text)
+	if vote == NilBot {
+		return vote, nil
+	}
+
+	// if this is a reply, the subject is the immediate parent
+	if post.Reply != nil && !helpers.IsSelfThread(c, post) {
+		parentURI, err := syntax.ParseATURI(post.Reply.Parent.Uri)
+		if err != nil {
+			return NilBot, nil
 		}
-
-		if c.GetCountDistinct("goodbot", botDID, countstore.PeriodTotal) > GOOD_BOT_REPLY_THRESHOLD-1 {
-			c.Logger.Error("good bot")
-			// c.AddAccountLabel("good-bot")
-			// c.Notify("slack")
+		parentDID, err := parentURI.Authority().AsDID()
+		if err != nil {
+			return NilBot, nil
 		}
-
-		if c.GetCountDistinct("bladerunner", authorDID, countstore.PeriodTotal) > BLADERUNNER_THRESHOLD-1 {
-			c.Logger.Error("bladerunner")
-			// c.AddAccountLabel("bladerunner")
-			// c.Notify("slack")
-		}
-
-		return
+		return vote, &parentDID
 	}
 
-	c.IncrementDistinct("badbot", botDID, authorDID)
-	c.IncrementDistinct("jabroni", authorDID, botDID)
-	c.Logger.Error("bad bot reply")
-
-	if c.GetCountDistinct("badbot", botDID, countstore.PeriodTotal) > BAD_BOT_REPLY_THRESHOLD-1 {
-		// @TODO: this would add label to the reply author's account not the parent/bot's account
-		// c.AddAccountLabel("bad-bot")
-		c.Logger.Error("bad bot")
-		// c.Notify("slack")
-	}
-
-	if c.GetCountDistinct("jabroni", authorDID, countstore.PeriodTotal) > JABRONI_THRESHOLD-1 {
-		// c.AddAccountLabel("jabroni")
-		c.Logger.Error("jabroni")
-		// c.Notify("slack")
-	}
-}
-
-func mentionedDids(post *appbsky.FeedPost) []string {
-	mentionedDids := []string{}
-	for _, facet := range post.Facets {
-		for _, feature := range facet.Features {
-			mention := feature.RichtextFacet_Mention
-			if mention == nil {
-				continue
-			}
-			mentionedDids = append(mentionedDids, mention.Did)
-		}
-	}
-
-	return mentionedDids
-}
-
-// @TODO: this is a dumb check that only matches text exactly, could be improved
-func GetBotResponseType(s string) int {
-	// Normalize the string by converting to lowercase and trimming spaces
-	tokens := TokenizeText(strings.TrimSpace(strings.ToLower(s)))
-	hasGoodBot := false
-	hasBadBot := false
-
-	for i, token := range tokens {
-		if token != "good" && token != "bad" && token != "bot" && !strings.HasPrefix(token, "@") {
-			return -1
-		}
-
-		if (token == "good" || token == "bad") && i+1 < len(tokens) && tokens[i+1] == "bot" {
-			if token == "good" {
-				hasGoodBot = true
-			} else {
-				hasBadBot = true
-			}
-		}
-	}
-
-	if hasGoodBot {
-		return 1
-	}
-
-	if hasBadBot {
-		return 0
-	}
-
-	return -1
-}
-
-// checks if the post event is a reply post for which the author is replying to themselves, or author is the root author (OP)
-func IsSelfThread(c *automod.RecordContext, post *appbsky.FeedPost) bool {
-	if post.Reply == nil {
-		return false
-	}
-	did := c.Account.Identity.DID.String()
-	parentURI, err := syntax.ParseATURI(post.Reply.Parent.Uri)
+	// if there is a single metion, the subject is the mentioned account
+	facets, err := helpers.ExtractFacets(post)
 	if err != nil {
-		return false
+		// just skip invalid posts
+		return NilBot, nil
 	}
-	rootURI, err := syntax.ParseATURI(post.Reply.Root.Uri)
-	if err != nil {
-		return false
+	if len(facets) == 1 && facets[0].DID != nil {
+		did, err := syntax.ParseDID(*facets[0].DID)
+		if nil == err {
+			return vote, &did
+		}
 	}
 
-	if parentURI.Authority().String() == did || rootURI.Authority().String() == did {
-		return true
-	}
-	return false
+	// TODO: quote posts
+	return NilBot, nil
 }
 
-func TokenizeText(text string) []string {
-	return strings.Fields(text)
+func parsePostText(s string) string {
+	// @TODO: this is a dumb check that only matches text exactly, could be improved
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "bad bot" {
+		return BadBot
+	}
+	if s == "good bot" {
+		return GoodBot
+	}
+	return NilBot
 }

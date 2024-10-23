@@ -7,6 +7,16 @@ import (
 	"github.com/bluesky-social/indigo/automod"
 )
 
+func accountHasLabel(am *automod.AccountMeta, label string) bool {
+	// check if label is already applied
+	for _, l := range am.AccountLabels {
+		if l == label {
+			return true
+		}
+	}
+	return false
+}
+
 func addAccountLabel(c *automod.RecordContext, did syntax.DID, label string) error {
 	am := c.GetAccountMeta(did)
 	eng := c.InternalEngine()
