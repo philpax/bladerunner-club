@@ -1,0 +1,70 @@
+{
+  "$type": "app.bsky.labeler.service",
+  "createdAt": "2024-10-22T17:13:47.768Z",
+  "policies": {
+    "labelValueDefinitions": [
+      {
+        "adultOnly": false,
+        "blurs": "none",
+        "defaultSetting": "inform",
+        "identifier": "jabroni",
+        "locales": [
+          {
+            "description": "yeah... jabronis!",
+            "lang": "en",
+            "name": "Jabroni"
+          }
+        ],
+        "severity": "inform"
+      },
+      {
+        "adultOnly": false,
+        "blurs": "none",
+        "defaultSetting": "inform",
+        "identifier": "bladerunner",
+        "locales": [
+          {
+            "description": "The labelled account has been awarded the special role of bladerunner because of their accuracy in hunting down good bots and bad bots.",
+            "lang": "en",
+            "name": "Bladerunner"
+          }
+        ],
+        "severity": "inform"
+      },
+      {
+        "adultOnly": false,
+        "blurs": "none",
+        "defaultSetting": "inform",
+        "identifier": "good-bot",
+        "locales": [
+          {
+            "description": "The labelled account is a bot that has been flagged as a useful bot account by other users.",
+            "lang": "en",
+            "name": "Good bot"
+          }
+        ],
+        "severity": "inform"
+      },
+      {
+        "adultOnly": false,
+        "blurs": "content|media",
+        "defaultSetting": "alert",
+        "identifier": "bad-bot",
+        "locales": [
+          {
+            "description": "The labelled account is a bot that has been flagged for unwanted activities on the network.",
+            "lang": "en",
+            "name": "Bad bot"
+          }
+        ],
+        "severity": "alert"
+      }
+    ],
+    "labelValues": [
+      "good-bot",
+      "bladerunner",
+      "jabroni",
+      "bad-bot"
+    ]
+  }
+}
