@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	GOOD_BOT_THRESHOLD = 1
-	BAD_BOT_THRESHOLD  = 1
+	GOOD_BOT_THRESHOLD = 2
+	BAD_BOT_THRESHOLD  = 3
 	//BLADERUNNER_THRESHOLD = 2
 	//JABRONI_THRESHOLD = 2
 )
@@ -66,7 +66,7 @@ func GoodBotBadBotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		goodCount = goodCount + 1
 	} else if vote == BadBot {
 		c.IncrementDistinct("bad-bot", subjectDID.String(), authorDID.String())
-		badCount = badCount + 1
+		badCount = goodCount + 1
 	}
 
 	c.Logger.Warn("valid bot assessment", "vote", vote, "goodCount", goodCount, "badCount", badCount, "subjectLabels", subjectMeta.AccountLabels)
