@@ -5,8 +5,8 @@
     "labelValueDefinitions": [
       {
         "adultOnly": false,
-        "blurs": "content|media",
-        "defaultSetting": "alert",
+        "blurs": "content",
+        "defaultSetting": "warn",
         "identifier": "bad-bot",
         "locales": [
           {
@@ -20,7 +20,7 @@
       {
         "adultOnly": false,
         "blurs": "none",
-        "defaultSetting": "inform",
+        "defaultSetting": "warn",
         "identifier": "good-bot",
         "locales": [
           {
@@ -34,7 +34,7 @@
       {
         "adultOnly": false,
         "blurs": "none",
-        "defaultSetting": "inform",
+        "defaultSetting": "warn",
         "identifier": "bladerunner",
         "locales": [
           {
@@ -48,7 +48,7 @@
       {
         "adultOnly": false,
         "blurs": "none",
-        "defaultSetting": "inform",
+        "defaultSetting": "warn",
         "identifier": "jabroni",
         "locales": [
           {
