@@ -3,7 +3,7 @@ module github.com/bluesky-social/bladerunner-club
 go 1.22.2
 
 require (
-	github.com/bluesky-social/indigo v0.0.0-20241022192011-1b2d84c83f3b
+	github.com/bluesky-social/indigo v0.0.0-20241023164949-d52ce4d59cc8
 	github.com/carlmjohnson/versioninfo v0.22.5
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.17.0
