@@ -145,6 +145,9 @@ func NewServer(dir identity.Directory, config Config) (*Server, error) {
 		OzoneClient: ozoneClient,
 		//AdminClient: adminClient,
 		//BlobClient:  blobClient,
+		Config: automod.EngineConfig{
+			SkipAccountMeta: true,
+		},
 	}
 
 	s := &Server{

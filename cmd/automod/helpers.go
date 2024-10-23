@@ -21,7 +21,7 @@ func addAccountLabel(c *automod.RecordContext, did syntax.DID, label string) err
 	am := c.GetAccountMeta(did)
 	eng := c.InternalEngine()
 	if eng.OzoneClient == nil {
-		c.Logger.Warn("skipping label addition", "did", did, "label", label)
+		c.Logger.Warn("skipping label addition (no ozone client)", "did", did, "label", label)
 		return nil
 	}
 
@@ -57,7 +57,7 @@ func removeAccountLabel(c *automod.RecordContext, did syntax.DID, label string) 
 	am := c.GetAccountMeta(did)
 	eng := c.InternalEngine()
 	if eng.OzoneClient == nil {
-		c.Logger.Warn("skipping label removal", "did", did, "label", label)
+		c.Logger.Warn("skipping label removal (no ozone client)", "did", did, "label", label)
 		return nil
 	}
 
