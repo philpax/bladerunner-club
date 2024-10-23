@@ -66,7 +66,7 @@ func GoodBotBadBotRule(c *automod.RecordContext, post *appbsky.FeedPost) error {
 		goodCount = goodCount + 1
 	} else if vote == BadBot {
 		c.IncrementDistinct("bad-bot", subjectDID.String(), authorDID.String())
-		badCount = goodCount + 1
+		badCount = badCount + 1
 	}
 
 	c.Logger.Warn("valid bot assessment", "vote", vote, "goodCount", goodCount, "badCount", badCount, "subjectLabels", subjectMeta.AccountLabels)
