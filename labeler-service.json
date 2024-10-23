@@ -5,14 +5,28 @@
     "labelValueDefinitions": [
       {
         "adultOnly": false,
-        "blurs": "none",
-        "defaultSetting": "inform",
-        "identifier": "jabroni",
+        "blurs": "content|media",
+        "defaultSetting": "alert",
+        "identifier": "bad-bot",
         "locales": [
           {
-            "description": "yeah... jabronis!",
+            "description": "An annoying or misleading bot account, as flagged by the community",
             "lang": "en",
-            "name": "Jabroni"
+            "name": "🤖 Bad Bot"
+          }
+        ],
+        "severity": "alert"
+      },
+      {
+        "adultOnly": false,
+        "blurs": "none",
+        "defaultSetting": "inform",
+        "identifier": "good-bot",
+        "locales": [
+          {
+            "description": "A bot, but flagged as useful by the community",
+            "lang": "en",
+            "name": "🤖 Good Bot"
           }
         ],
         "severity": "inform"
@@ -24,9 +38,9 @@
         "identifier": "bladerunner",
         "locales": [
           {
-            "description": "The labelled account has been awarded the special role of bladerunner because of their accuracy in hunting down good bots and bad bots.",
+            "description": "Accounts who are particularly skilled at identifying replicants",
             "lang": "en",
-            "name": "Bladerunner"
+            "name": "🥷 Blade Runner"
           }
         ],
         "severity": "inform"
@@ -35,36 +49,22 @@
         "adultOnly": false,
         "blurs": "none",
         "defaultSetting": "inform",
-        "identifier": "good-bot",
+        "identifier": "jabroni",
         "locales": [
           {
-            "description": "The labelled account is a bot that has been flagged as a useful bot account by other users.",
+            "description": "Lamers messing with the assessment process",
             "lang": "en",
-            "name": "Good bot"
+            "name": "🤡 Jabroni"
           }
         ],
         "severity": "inform"
-      },
-      {
-        "adultOnly": false,
-        "blurs": "content|media",
-        "defaultSetting": "alert",
-        "identifier": "bad-bot",
-        "locales": [
-          {
-            "description": "The labelled account is a bot that has been flagged for unwanted activities on the network.",
-            "lang": "en",
-            "name": "Bad bot"
-          }
-        ],
-        "severity": "alert"
       }
     ],
     "labelValues": [
+      "bad-bot",
       "good-bot",
       "bladerunner",
-      "jabroni",
-      "bad-bot"
+      "jabroni"
     ]
   }
 }
